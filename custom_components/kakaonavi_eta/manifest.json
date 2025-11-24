@@ -1,11 +1,11 @@
 {
-  "codeowners": ["@suapapa"],
+  "codeowners": ["@suapapa","@yangs1202"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/suapapa/ha-kakaonavi_eta/",
   "domain": "kakaonavi_eta",
   "iot_class": "calculated",
   "name": "KakaoNavi ETA",
-  "requirements": [],
+  "requirements": ["requests"],
   "version": "0.0.1"
 }
