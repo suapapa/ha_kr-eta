@@ -1,1 +1,0 @@
-DOMAIN = "kakaonavi_eta"
