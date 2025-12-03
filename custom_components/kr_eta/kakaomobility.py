@@ -1,5 +1,5 @@
 import requests
-from custom_components.kr_eta.vworld import Location
+from .vworld import Location
 
 
 # curl -v -X GET "https://apis-navi.kakaomobility.com/v1/directions?origin=127.10764191124568,37.402464820205246,angle=270&destination=127.11056336672839,37.39419693653072&summary=false&waypoints=127.17354989857544,37.36629687436494&priority=RECOMMEND&car_fuel=GASOLINE&car_hipass=false&alternatives=false&road_details=false" \

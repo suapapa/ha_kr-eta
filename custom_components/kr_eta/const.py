@@ -1,1 +1,12 @@
 DOMAIN = "kr_eta"
+
+CONF_VWORLD_API_KEY = "vworld_api_key"
+CONF_KAKAODEVELOPERS_API_KEY = "kakao_developers_api_key"
+CONF_STARTPOINT = "startpoint"
+CONF_ENDPOINT = "endpoint"
+CONF_WAYPOINTS = "waypoints"
+CONF_LOCATION_NAME = "name"
+CONF_LOCATION_ADDRESS = "address"
+CONF_LOCATION_X = "x"
+CONF_LOCATION_Y = "y"
+CONF_ADD_WAYPOINT = "add_waypoint"
