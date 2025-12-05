@@ -49,8 +49,7 @@ def test_point_to_param_str(navi, location_start):
     param_str = navi._point_to_param_str(location_no_name)
     assert param_str == "127.0,37.0"
 
-@patch("requests.Session.get")
-def test_get_eta_success(mock_get, navi, location_start, location_end):
+def test_get_eta_success(navi, location_start, location_end):
     navi.set_startpoint(location_start)
     navi.set_endpoint(location_end)
 
@@ -62,19 +61,21 @@ def test_get_eta_success(mock_get, navi, location_start, location_end):
             "summary": {"duration": 1234}
         }]
     }
-    mock_get.return_value = mock_response
+    
+    # Mock the session object directly
+    navi.rs = Mock()
+    navi.rs.get.return_value = mock_response
 
     duration = navi.get_eta()
-    assert duration == 1234
+    assert duration.get("duration") == 1234
     
-    mock_get.assert_called_once()
-    args, kwargs = mock_get.call_args
+    navi.rs.get.assert_called_once()
+    args, kwargs = navi.rs.get.call_args
     assert args[0] == navi.apiurl
     assert kwargs["params"]["origin"] == "127.0,37.0,name=Start"
     assert kwargs["params"]["destination"] == "127.1,37.1,name=End"
 
-@patch("requests.Session.get")
-def test_get_eta_with_waypoints(mock_get, navi, location_start, location_end):
+def test_get_eta_with_waypoints(navi, location_start, location_end):
     navi.set_startpoint(location_start)
     navi.set_endpoint(location_end)
     navi.set_waypoints([location_start, location_end])
@@ -87,11 +88,13 @@ def test_get_eta_with_waypoints(mock_get, navi, location_start, location_end):
             "summary": {"duration": 1234}
         }]
     }
-    mock_get.return_value = mock_response
+    
+    navi.rs = Mock()
+    navi.rs.get.return_value = mock_response
 
     navi.get_eta()
     
-    _, kwargs = mock_get.call_args
+    _, kwargs = navi.rs.get.call_args
     assert "waypoints" in kwargs["params"]
     assert kwargs["params"]["waypoints"] == "127.0,37.0,name=Start|127.1,37.1,name=End"
 
@@ -103,20 +106,20 @@ def test_get_eta_missing_points(navi, location_start):
     with pytest.raises(ValueError, match="Startpoint or endpoint is not set"):
         navi.get_eta()
 
-@patch("requests.Session.get")
-def test_get_eta_http_error(mock_get, navi, location_start, location_end):
+def test_get_eta_http_error(navi, location_start, location_end):
     navi.set_startpoint(location_start)
     navi.set_endpoint(location_end)
 
     mock_response = Mock()
     mock_response.status_code = 500
-    mock_get.return_value = mock_response
+    
+    navi.rs = Mock()
+    navi.rs.get.return_value = mock_response
 
     with pytest.raises(Exception, match="Failed to get eta: 500"):
         navi.get_eta()
 
-@patch("requests.Session.get")
-def test_get_eta_api_error(mock_get, navi, location_start, location_end):
+def test_get_eta_api_error(navi, location_start, location_end):
     navi.set_startpoint(location_start)
     navi.set_endpoint(location_end)
 
@@ -129,7 +132,9 @@ def test_get_eta_api_error(mock_get, navi, location_start, location_end):
             "summary": {}
         }]
     }
-    mock_get.return_value = mock_response
+    
+    navi.rs = Mock()
+    navi.rs.get.return_value = mock_response
 
     with pytest.raises(Exception, match="Failed to get eta: result_code=101, result_msg=Some error"):
         navi.get_eta()

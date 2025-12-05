@@ -57,6 +57,6 @@ class Navi:
 
         data = response.json().get("routes")[0]
         if not data.get("result_code") == 0:
-            raise Exception(f"Failed to get eta: result_code={data.get("result_code")}, result_msg={data.get("result_msg")}")
+            raise Exception(f"Failed to get eta: result_code={data.get('result_code')}, result_msg={data.get('result_msg')}")
 
         return data.get("summary")
