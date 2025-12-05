@@ -1,16 +1,16 @@
 {
   "domain": "kr_eta",
-  "name": "KakaoNavi ETA",
+  "name": "KR ETA",
   "codeowners": [
     "@suapapa",
     "@yangs1202"
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/suapapa/ha-kr_eta/",
+  "documentation": "https://github.com/suapapa/ha_kr-eta/",
   "iot_class": "calculated",
   "requirements": [
     "requests"
   ],
-  "version": "0.0.1"
+  "version": "0.0.2"
 }
