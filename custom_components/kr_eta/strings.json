@@ -1,0 +1,39 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "API 인증",
+                "description": "VWorld와 Kakao Developers API 키를 입력해 주세요."
+            },
+            "start_location": {
+                "title": "출발지 설정",
+                "description": "출발지의 주소 또는 장소명을 입력하세요."
+            },
+            "endpoint_location": {
+                "title": "도착지 설정",
+                "description": "도착지의 주소 또는 장소명을 입력하세요."
+            },
+            "waypoint_location": {
+                "title": "경유지 설정",
+                "description": "경유할 지점의 주소 또는 장소명을 입력하세요."
+            }
+        },
+        "error": {
+            "need_api_keys": "API 키를 모두 입력해야 합니다.",
+            "need_address": "주소를 입력해야 합니다.",
+            "address_not_found": "해당 주소를 찾을 수 없습니다. 정확한 주소를 입력해 주세요.",
+            "max_waypoints": "경유지는 최대 5개까지 설정할 수 있습니다."
+        },
+        "abort": {
+            "already_configured": "이미 설정된 서비스입니다."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "설정 변경",
+                "description": "아래 옵션에서 삭제할 경유지를 선택하세요."
+            }
+        }
+    }
+}

@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 from typing import Any, Dict, Optional
+from urllib.parse import unquote_plus
 
 from homeassistant import config_entries, core
 from homeassistant.core import callback
@@ -67,9 +68,9 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
+                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
-                    _LOGGER.exception(f"Failed to get start location coordinates: {e}")
+                    _LOGGER.exception("Failed to get start location coordinates")
                     errors["base"] = "address_not_found"
 
             if not errors:
@@ -88,7 +89,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
+                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
                     _LOGGER.exception("Failed to get endpoint location coordinates")
                     errors["base"] = "address_not_found"
@@ -115,7 +116,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
+                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
                     _LOGGER.exception("Failed to get waypoint location coordinates")
                     errors["base"] = "address_not_found"
