@@ -69,6 +69,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
                 except Exception as e:
+                    _LOGGER.exception(f"Failed to get start location coordinates: {e}")
                     errors["base"] = "address_not_found"
 
             if not errors:
@@ -89,6 +90,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
                 except Exception as e:
+                    _LOGGER.exception("Failed to get endpoint location coordinates")
                     errors["base"] = "address_not_found"
 
             if not errors:
@@ -115,6 +117,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     x, y = self.gc.getcoord(user_input.get(CONF_LOCATION_ADDRESS))
                 except Exception as e:
+                    _LOGGER.exception("Failed to get waypoint location coordinates")
                     errors["base"] = "address_not_found"
 
             if not errors:
