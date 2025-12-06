@@ -55,7 +55,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not errors:
                 self.data = user_input
                 self.data[CONF_WAYPOINTS] = []
-                self.gc = GeoCoder(user_input.get(CONF_VWORLD_API_KEY))
+                self.gc = GeoCoder(user_input.get(CONF_VWORLD_API_KEY), async_get_clientsession(self.hass))
                 return await self.async_step_start_location()
 
         return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors=errors)
@@ -68,7 +68,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
+                    x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
                     _LOGGER.exception("Failed to get start location coordinates")
                     errors["base"] = "address_not_found"
@@ -89,7 +89,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
+                    x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
                     _LOGGER.exception("Failed to get endpoint location coordinates")
                     errors["base"] = "address_not_found"
@@ -116,7 +116,7 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "need_address"
             else:
                 try:
-                    x, y = self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
+                    x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
                 except Exception as e:
                     _LOGGER.exception("Failed to get waypoint location coordinates")
                     errors["base"] = "address_not_found"
