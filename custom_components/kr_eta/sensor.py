@@ -20,6 +20,7 @@ from .const import (
     CONF_LOCATION_ADDRESS,
     CONF_LOCATION_X,
     CONF_LOCATION_Y,
+    CONF_ROUTES,
 )
 from .kakaomobility import Navi
 from .vworld import Location
@@ -33,40 +34,54 @@ async def async_setup_entry(
 ) -> None:
     """Set up the KR ETA sensor."""
     config = entry.data
+    options = entry.options
     
-    kakao_api_key = config[CONF_KAKAODEVELOPERS_API_KEY]
+    kakao_api_key = config.get(CONF_KAKAODEVELOPERS_API_KEY)
     
-    start_config = config[CONF_STARTPOINT]
-    end_config = config[CONF_ENDPOINT]
-    waypoints_config = config.get(CONF_WAYPOINTS, [])
+    # Support for multiple routes from options
+    routes = options.get(CONF_ROUTES, [])
+    
+    entities = []
+    
+    for route in routes:
+        start_config = route.get(CONF_STARTPOINT)
+        end_config = route.get(CONF_ENDPOINT)
+        waypoints_config = route.get(CONF_WAYPOINTS, [])
+        route_id = route.get("id")
 
-    start_point = Location(
-        name=start_config.get(CONF_LOCATION_NAME, "Start"),
-        x=start_config[CONF_LOCATION_X],
-        y=start_config[CONF_LOCATION_Y]
-    )
-    
-    end_point = Location(
-        name=end_config.get(CONF_LOCATION_NAME, "End"),
-        x=end_config[CONF_LOCATION_X],
-        y=end_config[CONF_LOCATION_Y]
-    )
-    
-    waypoints = []
-    for wp in waypoints_config:
-        waypoints.append(Location(
-            name=wp.get(CONF_LOCATION_NAME, "Waypoint"),
-            x=wp[CONF_LOCATION_X],
-            y=wp[CONF_LOCATION_Y]
-        ))
+        if not start_config or not end_config:
+            continue
 
-    async_add_entities([KrEtaSensor(kakao_api_key, start_point, end_point, waypoints, entry.entry_id)], True)
+        start_point = Location(
+            name=start_config.get(CONF_LOCATION_NAME, "Start"),
+            x=start_config[CONF_LOCATION_X],
+            y=start_config[CONF_LOCATION_Y]
+        )
+        
+        end_point = Location(
+            name=end_config.get(CONF_LOCATION_NAME, "End"),
+            x=end_config[CONF_LOCATION_X],
+            y=end_config[CONF_LOCATION_Y]
+        )
+        
+        waypoints = []
+        for wp in waypoints_config:
+            waypoints.append(Location(
+                name=wp.get(CONF_LOCATION_NAME, "Waypoint"),
+                x=wp[CONF_LOCATION_X],
+                y=wp[CONF_LOCATION_Y]
+            ))
+
+        entities.append(KrEtaSensor(kakao_api_key, start_point, end_point, waypoints, entry.entry_id, route_id))
+
+    if entities:
+        async_add_entities(entities, True)
 
 
 class KrEtaSensor(SensorEntity):
     """Representation of a KR ETA Sensor."""
 
-    def __init__(self, api_key, start_point, end_point, waypoints, entry_id):
+    def __init__(self, api_key, start_point, end_point, waypoints, entry_id, route_id):
         """Initialize the sensor."""
         self._navi = Navi(api_key)
         self._navi.set_startpoint(start_point)
@@ -77,12 +92,18 @@ class KrEtaSensor(SensorEntity):
         self._end_point = end_point
         self._waypoints = waypoints
         self._entry_id = entry_id
+        self._route_id = route_id
         
         self._state = None
         self._attributes = {}
         
-        # Unique ID based on entry_id to allow multiple instances
-        self._attr_unique_id = f"{entry_id}_eta"
+        # Unique ID based on entry_id and route_id
+        if route_id:
+             self._attr_unique_id = f"{entry_id}_{route_id}"
+        else:
+             # Fallback for legacy or single route if migrated poorly (though we are doing fresh install helper)
+             self._attr_unique_id = f"{entry_id}_eta"
+             
         self._attr_name = f"ETA {start_point.name} -> {end_point.name}"
 
     @property

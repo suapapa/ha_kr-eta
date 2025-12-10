@@ -18,6 +18,8 @@ sys.modules['homeassistant.const'] = MagicMock()
 
 # Mock requests module
 sys.modules['requests'] = MagicMock()
+sys.modules['aiohttp'] = MagicMock()
+sys.modules['async_timeout'] = MagicMock()
 
 # Mock voluptuous module
 sys.modules['voluptuous'] = MagicMock()
@@ -80,7 +82,7 @@ class TestKrEtaSensor(unittest.TestCase):
             "taxi_fare": 15000
         }
 
-        sensor = KrEtaSensor(self.api_key, self.start_point, self.end_point, self.waypoints, self.entry_id)
+        sensor = KrEtaSensor(self.api_key, self.start_point, self.end_point, self.waypoints, self.entry_id, "test_route_id")
         
         # Trigger update
         sensor.update()

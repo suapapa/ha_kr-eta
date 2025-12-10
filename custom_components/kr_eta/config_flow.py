@@ -1,20 +1,17 @@
 from copy import deepcopy
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from urllib.parse import unquote_plus
+import uuid
 
 from homeassistant import config_entries, core
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity_registry import (
-    async_entries_for_config_entry,
-    async_get,
-)
 import voluptuous as vol
 
 from .const import *
-from .vworld import GeoCoder
+from .const import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,11 +37,10 @@ WAYPOINT_SCHEMA = vol.Schema({
     vol.Optional(CONF_ADD_WAYPOINT, default=False): cv.boolean,
 })
 
-class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Github Custom config flow."""
+class KrEtaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """KR ETA config flow."""
 
-    data: Optional[Dict[str, Any]]
-    gc: GeoCoder
+    VERSION = 1
 
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
         """Invoked when a user initiates a flow via the user interface."""
@@ -52,13 +48,45 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if not user_input.get(CONF_VWORLD_API_KEY) or not user_input.get(CONF_KAKAODEVELOPERS_API_KEY):
                 errors["base"] = "need_api_keys"
+            
             if not errors:
-                self.data = user_input
-                self.data[CONF_WAYPOINTS] = []
-                self.gc = GeoCoder(user_input.get(CONF_VWORLD_API_KEY), async_get_clientsession(self.hass))
-                return await self.async_step_start_location()
+                return self.async_create_entry(title="KR ETA", data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors=errors)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+        self.temp_route = {}
+        self.gc = None
+
+    async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Manage the options."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=["add_route", "remove_route"]
+        )
+
+    async def async_step_add_route(self, user_input: Optional[Dict[str, Any]] = None):
+        """Start adding a new route - Start Location."""
+        self.temp_route = {
+            "id": str(uuid.uuid4()),
+            CONF_WAYPOINTS: []
+        }
+        # Initialize GeoCoder with API key from config entry
+        from .vworld import GeoCoder
+        vworld_key = self.config_entry.data.get(CONF_VWORLD_API_KEY)
+        self.gc = GeoCoder(vworld_key, async_get_clientsession(self.hass))
+        
+        return await self.async_step_start_location()
 
     async def async_step_start_location(self, user_input: Optional[Dict[str, Any]] = None):
         """Second step: Select start location."""
@@ -69,15 +97,13 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 try:
                     x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
-                except Exception as e:
+                    self.temp_route[CONF_STARTPOINT] = user_input
+                    self.temp_route[CONF_STARTPOINT][CONF_LOCATION_X] = x
+                    self.temp_route[CONF_STARTPOINT][CONF_LOCATION_Y] = y
+                    return await self.async_step_endpoint_location()
+                except Exception:
                     _LOGGER.exception("Failed to get start location coordinates")
                     errors["base"] = "address_not_found"
-
-            if not errors:
-                self.data[CONF_STARTPOINT] = user_input
-                self.data[CONF_STARTPOINT][CONF_LOCATION_X] = x
-                self.data[CONF_STARTPOINT][CONF_LOCATION_Y] = y
-                return await self.async_step_endpoint_location()
 
         return self.async_show_form(step_id="start_location", data_schema=STARTPOINT_SCHEMA, errors=errors)
 
@@ -90,19 +116,17 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 try:
                     x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
-                except Exception as e:
+                    self.temp_route[CONF_ENDPOINT] = user_input
+                    self.temp_route[CONF_ENDPOINT][CONF_LOCATION_X] = x
+                    self.temp_route[CONF_ENDPOINT][CONF_LOCATION_Y] = y
+                    
+                    if user_input.get(CONF_ADD_WAYPOINT, False):
+                        return await self.async_step_waypoint_location()
+                    
+                    return self._save_route()
+                except Exception:
                     _LOGGER.exception("Failed to get endpoint location coordinates")
                     errors["base"] = "address_not_found"
-
-            if not errors:
-                self.data[CONF_ENDPOINT] = user_input
-                self.data[CONF_ENDPOINT][CONF_LOCATION_X] = x
-                self.data[CONF_ENDPOINT][CONF_LOCATION_Y] = y
-
-                if user_input.get(CONF_ADD_WAYPOINT, False):
-                    return await self.async_step_waypoint_location()
-                
-                return self.async_create_entry(title="KR ETA", data=self.data)
 
         return self.async_show_form(step_id="endpoint_location", data_schema=ENDPOINT_SCHEMA, errors=errors)
 
@@ -110,72 +134,60 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Fourth step: Select waypoint location."""
         errors: Dict[str, str] = {}
         if user_input is not None:
-            if len(self.data[CONF_WAYPOINTS]) >= 5:
+            if len(self.temp_route[CONF_WAYPOINTS]) >= 5:
                 errors["base"] = "max_waypoints"
             elif not user_input.get(CONF_LOCATION_ADDRESS):
                 errors["base"] = "need_address"
             else:
                 try:
                     x, y = await self.gc.getcoord(unquote_plus(user_input.get(CONF_LOCATION_ADDRESS)))
-                except Exception as e:
+                    waypoint = user_input
+                    waypoint[CONF_LOCATION_X] = x
+                    waypoint[CONF_LOCATION_Y] = y
+                    self.temp_route[CONF_WAYPOINTS].append(waypoint)
+
+                    if user_input.get(CONF_ADD_WAYPOINT, False):
+                        return await self.async_step_waypoint_location()
+                    
+                    return self._save_route()
+                except Exception:
                     _LOGGER.exception("Failed to get waypoint location coordinates")
                     errors["base"] = "address_not_found"
 
-            if not errors:
-                self.data[CONF_WAYPOINTS].append(user_input)
-                self.data[CONF_WAYPOINTS][-1][CONF_LOCATION_X] = x
-                self.data[CONF_WAYPOINTS][-1][CONF_LOCATION_Y] = y
-
-                if user_input.get(CONF_ADD_WAYPOINT, False):
-                    return await self.async_step_waypoint_location()
-                
-                return self.async_create_entry(title="KR ETA", data=self.data)
-
         return self.async_show_form(step_id="waypoint_location", data_schema=WAYPOINT_SCHEMA, errors=errors)
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        """Get the options flow for this handler."""
-        return OptionsFlowHandler(config_entry)
-
-
-class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
-
-    async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Manage the options."""
-        errors: Dict[str, str] = {}
+    def _save_route(self):
+        """Save the constructed route to options."""
+        # We store routes in options so they persist and are editable
+        current_routes = self.config_entry.options.get(CONF_ROUTES, [])
+        # If strictly "adding", just append.
+        new_routes = current_routes + [self.temp_route]
         
-        # Get current waypoints from config entry data
-        current_waypoints = self.config_entry.data.get(CONF_WAYPOINTS, [])
+        return self.async_create_entry(title="", data={CONF_ROUTES: new_routes})
+
+    async def async_step_remove_route(self, user_input: Optional[Dict[str, Any]] = None):
+        """Remove a route."""
+        current_routes = self.config_entry.options.get(CONF_ROUTES, [])
         
         if user_input is not None:
-            # Filter out the waypoints selected for removal
-            remove_indices = user_input.get("remove_waypoints", [])
-            new_waypoints = [
-                wp for i, wp in enumerate(current_waypoints) 
-                if str(i) not in remove_indices
+            selected_indices = [int(i) for i in user_input.get("routes", [])]
+            new_routes = [
+                route for i, route in enumerate(current_routes) 
+                if i not in selected_indices
             ]
-            
-            # Update the config entry
-            new_data = self.config_entry.data.copy()
-            new_data[CONF_WAYPOINTS] = new_waypoints
-            self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
-            
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data={CONF_ROUTES: new_routes})
 
-        # Generate options for the multi-select
         options = {
-            str(i): f"{wp.get(CONF_LOCATION_ADDRESS)} ({wp.get(CONF_LOCATION_NAME, 'No Name')})"
-            for i, wp in enumerate(current_waypoints)
+            str(i): f"{route[CONF_STARTPOINT][CONF_LOCATION_NAME]} -> {route[CONF_ENDPOINT][CONF_LOCATION_NAME]}"
+            for i, route in enumerate(current_routes)
         }
+        
+        if not options:
+             return self.async_abort(reason="no_routes_to_remove")
 
         return self.async_show_form(
-            step_id="init",
+            step_id="remove_route",
             data_schema=vol.Schema({
-                vol.Optional("remove_waypoints", default=[]): vol.MultiSelect(options)
-            }),
-            errors=errors
+                vol.Required("routes"): vol.MultiSelect(options)
+            })
         )
