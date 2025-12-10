@@ -83,7 +83,7 @@ class KrEtaSensor(SensorEntity):
         
         # Unique ID based on entry_id to allow multiple instances
         self._attr_unique_id = f"kreta_{entry_id}"
-        self._attr_name = f"⏱️ {start_point.name} ➡ {end_point.name}"
+        self._attr_name = f"{start_point.name} ➡ {end_point.name}"
 
     @property
     def native_value(self):
