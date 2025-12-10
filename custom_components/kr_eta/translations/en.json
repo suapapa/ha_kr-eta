@@ -1,0 +1,39 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "API Authentication",
+                "description": "Please enter your VWorld and Kakao Developers API keys."
+            },
+            "start_location": {
+                "title": "Set Start Location",
+                "description": "Enter the address or place name of the starting point."
+            },
+            "endpoint_location": {
+                "title": "Set Destination",
+                "description": "Enter the address or place name of the destination."
+            },
+            "waypoint_location": {
+                "title": "Set Waypoint",
+                "description": "Enter the address or place name of the waypoint."
+            }
+        },
+        "error": {
+            "need_api_keys": "Both API keys must be entered.",
+            "need_address": "Address must be entered.",
+            "address_not_found": "Address not found. Please enter a valid address.",
+            "max_waypoints": "You can set up to 5 waypoints."
+        },
+        "abort": {
+            "already_configured": "Service is already configured."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Change Settings",
+                "description": "Select waypoints to delete from the options below."
+            }
+        }
+    }
+}
