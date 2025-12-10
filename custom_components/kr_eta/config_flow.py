@@ -24,18 +24,18 @@ AUTH_SCHEMA = vol.Schema({
 })
 
 STARTPOINT_SCHEMA = vol.Schema({
-    vol.Optional(CONF_LOCATION_NAME): cv.string,
+    vol.Required(CONF_LOCATION_NAME): cv.string,
     vol.Required(CONF_LOCATION_ADDRESS): cv.string,
 })
 
 ENDPOINT_SCHEMA = vol.Schema({
-    vol.Optional(CONF_LOCATION_NAME): cv.string,
+    vol.Required(CONF_LOCATION_NAME): cv.string,
     vol.Required(CONF_LOCATION_ADDRESS): cv.string,
     vol.Optional(CONF_ADD_WAYPOINT, default=False): cv.boolean,
 })
 
 WAYPOINT_SCHEMA = vol.Schema({
-    vol.Optional(CONF_LOCATION_NAME): cv.string,
+
     vol.Required(CONF_LOCATION_ADDRESS): cv.string,
     vol.Optional(CONF_ADD_WAYPOINT, default=False): cv.boolean,
 })
@@ -120,7 +120,9 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if user_input.get(CONF_ADD_WAYPOINT, False):
                     return await self.async_step_waypoint_location()
                 
-                return self.async_create_entry(title="KR ETA", data=self.data)
+                start_name = self.data[CONF_STARTPOINT].get(CONF_LOCATION_NAME)
+                end_name = self.data[CONF_ENDPOINT].get(CONF_LOCATION_NAME)
+                return self.async_create_entry(title=f"ETA {start_name} ➡ {end_name}", data=self.data)
 
         return self.async_show_form(step_id="endpoint_location", data_schema=ENDPOINT_SCHEMA, errors=errors)
 
@@ -147,7 +149,10 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if user_input.get(CONF_ADD_WAYPOINT, False):
                     return await self.async_step_waypoint_location()
                 
-                return self.async_create_entry(title="KR ETA", data=self.data)
+                start_name = self.data[CONF_STARTPOINT].get(CONF_LOCATION_NAME)
+                end_name = self.data[CONF_ENDPOINT].get(CONF_LOCATION_NAME)
+                n_waypoints = len(self.data[CONF_WAYPOINTS])
+                return self.async_create_entry(title=f"ETA {start_name} ➡ {end_name} ({n_waypoints} waypoints)", data=self.data)
 
         return self.async_show_form(step_id="waypoint_location", data_schema=WAYPOINT_SCHEMA, errors=errors)
 
@@ -186,7 +191,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Generate options for the multi-select
         options = {
-            str(i): f"{wp.get(CONF_LOCATION_ADDRESS)} ({wp.get(CONF_LOCATION_NAME, 'No Name')})"
+            str(i): f"{wp.get(CONF_LOCATION_ADDRESS)}"
             for i, wp in enumerate(current_waypoints)
         }
 

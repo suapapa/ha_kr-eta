@@ -7,15 +7,15 @@
             },
             "start_location": {
                 "title": "Set Start Location",
-                "description": "Enter the address or place name of the starting point."
+                "description": "Enter the location name and address of the starting point."
             },
             "endpoint_location": {
                 "title": "Set Destination",
-                "description": "Enter the address or place name of the destination."
+                "description": "Enter the location name and address of the destination."
             },
             "waypoint_location": {
                 "title": "Set Waypoint",
-                "description": "Enter the address or place name of the waypoint."
+                "description": "Enter the address of the waypoint."
             }
         },
         "error": {
