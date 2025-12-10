@@ -49,6 +49,24 @@ class GithubCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
         """Invoked when a user initiates a flow via the user interface."""
         errors: Dict[str, str] = {}
+        
+        # Check if there are existing entries to reuse API keys from
+        existing_entries = self.hass.config_entries.async_entries(DOMAIN)
+        if existing_entries:
+            # Reuse keys from the first entry found
+            first_entry = existing_entries[0]
+            vworld_key = first_entry.data.get(CONF_VWORLD_API_KEY)
+            kakao_key = first_entry.data.get(CONF_KAKAODEVELOPERS_API_KEY)
+            
+            if vworld_key and kakao_key:
+                self.data = {
+                    CONF_VWORLD_API_KEY: vworld_key,
+                    CONF_KAKAODEVELOPERS_API_KEY: kakao_key,
+                    CONF_WAYPOINTS: []
+                }
+                self.gc = GeoCoder(vworld_key, async_get_clientsession(self.hass))
+                return await self.async_step_start_location()
+
         if user_input is not None:
             if not user_input.get(CONF_VWORLD_API_KEY) or not user_input.get(CONF_KAKAODEVELOPERS_API_KEY):
                 errors["base"] = "need_api_keys"
