@@ -1,6 +1,6 @@
 # KR ETA for Home Assistant
 
-![logo](./logo.png)
+![logo](./icons/logo.png)
 
 `kr-eta`는 Home Assistant의 custom component로 두 주소 사이의 이동 시간을 예측하는 기능을 제공합니다.
 
