@@ -2,15 +2,14 @@
   "domain": "kr_eta",
   "name": "KR ETA",
   "codeowners": [
-    "@suapapa",
-    "@yangs1202"
+    "@suapapa"
   ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/suapapa/ha_kr-eta/",
-  "iot_class": "calculated",
+  "iot_class": "cloud_polling",
   "requirements": [
     "requests"
   ],
-  "version": "0.0.2"
+  "version": "0.2"
 }
